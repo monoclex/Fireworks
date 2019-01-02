@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Threading.Tasks;
 
 namespace _2019Fireworks
@@ -11,6 +12,9 @@ namespace _2019Fireworks
 
 		public async Task Run(int msDelay)
 		{
+			var wasDelay = false;
+			var lastDelay = 0L;
+
 			while (true)
 			{
 				var requests = new List<Action>();
@@ -66,8 +70,45 @@ namespace _2019Fireworks
 				await Task.Delay(msDelay);
 
 				// TODO: time if these tasks are late
-				await Task.WhenAll(drawingTask, fufillRequests);
+				var delay = await TimeTask(Task.WhenAll(drawingTask, fufillRequests));
+
+				if (delay >= 10)
+				{
+					wasDelay = true;
+
+					Console.SetCursorPosition(0, 0);
+
+					Console.ForegroundColor = ConsoleColor.DarkRed;
+					Console.BackgroundColor = ConsoleColor.White;
+
+					Console.Write($@"/!\ DELAY /!\ {delay}ms");
+
+					Console.BackgroundColor = ConsoleColor.Black;
+				}
+				else if (wasDelay)
+				{
+					Console.SetCursorPosition(0, 0);
+
+					// i'm lazy ok :(
+					// "/!\ DELAY /!\ ms" is the 16, + length of delay
+					Console.Write(new string(' ', 16 + $"{lastDelay}".Length));
+
+					wasDelay = false;
+				}
+
+				lastDelay = delay;
 			}
+		}
+
+		private async Task<long> TimeTask(Task task)
+		{
+			var stopwatch = Stopwatch.StartNew();
+
+			await task;
+
+			stopwatch.Stop();
+
+			return stopwatch.ElapsedMilliseconds;
 		}
 
 		public void Spawn(IEntity entity)
